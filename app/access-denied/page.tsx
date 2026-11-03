@@ -1,3 +1,24 @@
 import { signOut } from "@/app/actions";
 import { db } from "@/lib/supabase";
-export default async function AccessDenied(){const supabase=await db();const {data:{user}}=await supabase.auth.getUser();return <main className="login-shell"><section className="panel login-card"><p className="eyebrow">ADMIN ACCESS REQUIRED</p><h1>This workspace is for superadmins.</h1><p className="muted">{user?.email?`You are signed in as ${user.email}. `:""}Ask the project owner to grant your profile admin access, or sign in with another account.</p><form action={signOut}><button className="button primary">Sign out</button></form></section></main>;}
+export default async function AccessDenied() {
+  const supabase = await db();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return (
+    <main className="login-shell">
+      <section className="panel login-card">
+        <p className="eyebrow">ADMIN ACCESS REQUIRED</p>
+        <h1>This workspace is for superadmins.</h1>
+        <p className="muted">
+          {user?.email ? `You are signed in as ${user.email}. ` : ""}Ask the
+          project owner to grant your profile admin access, or sign in with
+          another account.
+        </p>
+        <form action={signOut}>
+          <button className="button primary">Sign out</button>
+        </form>
+      </section>
+    </main>
+  );
+}

@@ -9,12 +9,22 @@ export async function db() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Supabase is not configured.");
   return createServerClient(url, key, {
-    cookieOptions: { name: AUTH_COOKIE, sameSite: "lax", path: "/" },
+    cookieOptions: {
+      name: AUTH_COOKIE,
+      sameSite: "lax",
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    },
     cookies: {
       getAll: () => store.getAll(),
       setAll(values) {
-        try { for (const { name, value, options } of values) store.set(name, value, options); }
-        catch { /* Session refresh is handled by proxy.ts for Server Components. */ }
+        try {
+          for (const { name, value, options } of values)
+            store.set(name, value, options);
+        } catch {
+          /* Session refresh is handled by proxy.ts for Server Components. */
+        }
       },
     },
   });

@@ -7,13 +7,20 @@ export async function proxy(request: NextRequest) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return response;
   const supabase = createServerClient(url, key, {
-    cookieOptions: { name: "prompt-studio-auth", sameSite: "lax", path: "/" },
+    cookieOptions: {
+      name: "prompt-studio-auth",
+      sameSite: "lax",
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    },
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll(values) {
         for (const { name, value } of values) request.cookies.set(name, value);
         response = NextResponse.next({ request });
-        for (const { name, value, options } of values) response.cookies.set(name, value, options);
+        for (const { name, value, options } of values)
+          response.cookies.set(name, value, options);
       },
     },
   });
@@ -21,4 +28,8 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"] };
+export const config = {
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};

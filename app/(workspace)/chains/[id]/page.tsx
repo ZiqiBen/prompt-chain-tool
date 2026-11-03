@@ -1,13 +1,234 @@
 import Link from "next/link";
-import { loadChain,when } from "@/lib/data";
+import { loadChain, when } from "@/lib/data";
 import type { Run } from "@/lib/types";
-import { moveStep,deleteStep } from "@/app/actions";
+import { moveStep, deleteStep } from "@/app/actions";
 import { DeleteButton } from "@/components/Controls";
 import { RunPanel } from "@/components/RunPanel";
-export default async function ChainPage({params,searchParams}:PageProps<"/chains/[id]">){
-  const {id}=await params;const query=await searchParams;const tab=query.tab==="generate"||query.tab==="media"?query.tab:"steps";
-  const {supabase,chain,steps}=await loadChain(id);
-  const runs=tab==="media"?await supabase.from("prompt_chain_runs").select("*").eq("prompt_chain_id",id).order("created_at",{ascending:false}).limit(50).returns<Run[]>():null;
-  const notice={saved:"Changes saved.","step-saved":"Step saved.",reordered:"Step order updated.","step-deleted":"Step deleted."}[String(query.notice)];
-  return <><Link className="back-link" href="/chains">← Prompt chains</Link><header className="page-header"><div><div className="row"><p className="eyebrow">PROMPT CHAIN</p><span className={`badge ${chain.is_active?"green":""}`}>{chain.is_active?"Active":"Inactive"}</span></div><h1>{chain.name}</h1><p className="muted description">{chain.description||"Add a description in chain settings."}</p></div><Link className="button" href={`/chains/${id}/edit`}>Edit chain</Link></header><nav className="tabs" aria-label="Chain sections"><Link aria-current={tab==="steps"?"page":undefined} href={`/chains/${id}`}>Steps <span>{steps.length}</span></Link><Link aria-current={tab==="generate"?"page":undefined} href={`/chains/${id}?tab=generate`}>Generate</Link><Link aria-current={tab==="media"?"page":undefined} href={`/chains/${id}?tab=media`}>Generated media</Link></nav>{notice&&<p className="notice success" role="status">{notice}</p>}{query.error&&<p className="notice error" role="alert">{String(query.error)}</p>}{tab==="steps"?<section><div className="section-heading"><div><h2>The workflow</h2><p className="muted">Steps run from top to bottom. Move a step with the arrows.</p></div><Link className="button primary" href={`/chains/${id}/steps/new`}>＋ Add step</Link></div>{steps.length?<ol className="step-list">{steps.map((step,index)=><li className="panel step-card" key={step.id}><span className="step-number">{index+1}</span><div className="step-content"><Link className="step-title" href={`/chains/${id}/steps/${step.id}`}>{step.name}</Link><p className="muted clamp">{step.prompt_template}</p></div><div className="step-actions"><div className="move-buttons">{[-1,1].map(direction=><form action={moveStep} key={direction}><input type="hidden" name="chain_id" value={id}/><input type="hidden" name="id" value={step.id}/><input type="hidden" name="direction" value={direction}/><button className="button icon-button" disabled={direction===-1?index===0:index===steps.length-1} aria-label={`Move ${step.name} ${direction===-1?"up":"down"}`} title={`Move ${direction===-1?"up":"down"}`}>{direction===-1?"↑":"↓"}</button></form>)}</div><Link className="button small" href={`/chains/${id}/steps/${step.id}`}>Edit</Link><DeleteButton action={deleteStep} id={step.id} chainId={id} label="Delete" message={`Delete step “${step.name}”? Saved run outputs will be kept.`}/></div></li>)}</ol>:<div className="panel empty"><span className="empty-symbol">＋</span><h2>Add your first step</h2><p className="muted">Start with an instruction, then build on its output.</p><Link className="button primary" href={`/chains/${id}/steps/new`}>Add a step</Link></div>}</section>:tab==="generate"?<RunPanel chainId={id} count={steps.length} active={chain.is_active} ready={!!(process.env.GEMINI_API_KEY||process.env.GOOGLE_GENERATIVE_AI_API_KEY)}/>:<section>{runs?.error?<p className="notice error">Run history could not be loaded. Please refresh.</p>:runs?.data?.length?<div className="stack">{runs.data.map(run=><Link className="panel run-card" key={run.id} href={`/runs/${run.id}`}><div className="row between"><h2>{when(run.created_at)} ET</h2><span className={`badge ${run.status==="completed"?"green":run.status==="failed"?"red":""}`}>{run.status}</span></div><p className="muted clamp">{run.input_text}</p>{run.output_text&&<p className="clamp">{run.output_text}</p>}<span className="text-link">View run →</span></Link>)}</div>:<div className="panel empty"><h2>No runs yet</h2><p className="muted">Run this chain to save its generated output here.</p><Link className="button primary" href={`/chains/${id}?tab=generate`}>Generate content</Link></div>}</section>}<details className="metadata"><summary>Chain information</summary><p>ID: <code>{id}</code></p><p>Created {when(chain.created_at)} ET</p></details></>;
+export default async function ChainPage({
+  params,
+  searchParams,
+}: PageProps<"/chains/[id]">) {
+  const { id } = await params;
+  const query = await searchParams;
+  const tab =
+    query.tab === "generate" || query.tab === "media" ? query.tab : "steps";
+  const { supabase, chain, steps } = await loadChain(id);
+  const runs =
+    tab === "media"
+      ? await supabase
+          .from("prompt_chain_runs")
+          .select("*")
+          .eq("prompt_chain_id", id)
+          .order("created_at", { ascending: false })
+          .limit(50)
+          .returns<Run[]>()
+      : null;
+  const notice = {
+    saved: "Changes saved.",
+    "step-saved": "Step saved.",
+    reordered: "Step order updated.",
+    "step-deleted": "Step deleted.",
+  }[String(query.notice)];
+  return (
+    <>
+      <Link className="back-link" href="/chains">
+        ← Prompt chains
+      </Link>
+      <header className="page-header">
+        <div>
+          <div className="row">
+            <p className="eyebrow">PROMPT CHAIN</p>
+            <span className={`badge ${chain.is_active ? "green" : ""}`}>
+              {chain.is_active ? "Active" : "Inactive"}
+            </span>
+          </div>
+          <h1>{chain.name}</h1>
+          <p className="muted description">
+            {chain.description || "Add a description in chain settings."}
+          </p>
+        </div>
+        <Link className="button" href={`/chains/${id}/edit`}>
+          Edit chain
+        </Link>
+      </header>
+      <nav className="tabs" aria-label="Chain sections">
+        <Link
+          aria-current={tab === "steps" ? "page" : undefined}
+          href={`/chains/${id}`}
+        >
+          Steps <span>{steps.length}</span>
+        </Link>
+        <Link
+          aria-current={tab === "generate" ? "page" : undefined}
+          href={`/chains/${id}?tab=generate`}
+        >
+          Generate
+        </Link>
+        <Link
+          aria-current={tab === "media" ? "page" : undefined}
+          href={`/chains/${id}?tab=media`}
+        >
+          Generated media
+        </Link>
+      </nav>
+      {notice && (
+        <p className="notice success" role="status">
+          {notice}
+        </p>
+      )}
+      {query.error && (
+        <p className="notice error" role="alert">
+          {String(query.error)}
+        </p>
+      )}
+      {tab === "steps" ? (
+        <section>
+          <div className="section-heading">
+            <div>
+              <h2>The workflow</h2>
+              <p className="muted">
+                Steps run from top to bottom. Move a step with the arrows.
+              </p>
+            </div>
+            <Link className="button primary" href={`/chains/${id}/steps/new`}>
+              ＋ Add step
+            </Link>
+          </div>
+          {steps.length ? (
+            <ol className="step-list">
+              {steps.map((step, index) => (
+                <li className="panel step-card" key={step.id}>
+                  <span className="step-number">{index + 1}</span>
+                  <div className="step-content">
+                    <Link
+                      className="step-title"
+                      href={`/chains/${id}/steps/${step.id}`}
+                    >
+                      {step.name}
+                    </Link>
+                    <p className="muted clamp">{step.prompt_template}</p>
+                  </div>
+                  <div className="step-actions">
+                    <div className="move-buttons">
+                      {[-1, 1].map((direction) => (
+                        <form action={moveStep} key={direction}>
+                          <input type="hidden" name="chain_id" value={id} />
+                          <input type="hidden" name="id" value={step.id} />
+                          <input
+                            type="hidden"
+                            name="direction"
+                            value={direction}
+                          />
+                          <button
+                            className="button icon-button"
+                            disabled={
+                              direction === -1
+                                ? index === 0
+                                : index === steps.length - 1
+                            }
+                            aria-label={`Move ${step.name} ${direction === -1 ? "up" : "down"}`}
+                            title={`Move ${direction === -1 ? "up" : "down"}`}
+                          >
+                            {direction === -1 ? "↑" : "↓"}
+                          </button>
+                        </form>
+                      ))}
+                    </div>
+                    <Link
+                      className="button small"
+                      href={`/chains/${id}/steps/${step.id}`}
+                    >
+                      Edit
+                    </Link>
+                    <DeleteButton
+                      action={deleteStep}
+                      id={step.id}
+                      chainId={id}
+                      label="Delete"
+                      message={`Delete step “${step.name}”? Saved run outputs will be kept.`}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <div className="panel empty">
+              <span className="empty-symbol">＋</span>
+              <h2>Add your first step</h2>
+              <p className="muted">
+                Start with an instruction, then build on its output.
+              </p>
+              <Link className="button primary" href={`/chains/${id}/steps/new`}>
+                Add a step
+              </Link>
+            </div>
+          )}
+        </section>
+      ) : tab === "generate" ? (
+        <RunPanel
+          chainId={id}
+          count={steps.length}
+          active={chain.is_active}
+          ready={
+            !!(
+              process.env.GEMINI_API_KEY ||
+              process.env.GOOGLE_GENERATIVE_AI_API_KEY
+            )
+          }
+        />
+      ) : (
+        <section>
+          {runs?.error ? (
+            <p className="notice error">
+              Run history could not be loaded. Please refresh.
+            </p>
+          ) : runs?.data?.length ? (
+            <div className="stack">
+              {runs.data.map((run) => (
+                <Link
+                  className="panel run-card"
+                  key={run.id}
+                  href={`/runs/${run.id}`}
+                >
+                  <div className="row between">
+                    <h2>{when(run.created_at)} ET</h2>
+                    <span
+                      className={`badge ${run.status === "completed" ? "green" : run.status === "failed" ? "red" : ""}`}
+                    >
+                      {run.status}
+                    </span>
+                  </div>
+                  <p className="muted clamp">{run.input_text}</p>
+                  {run.output_text && (
+                    <p className="clamp">{run.output_text}</p>
+                  )}
+                  <span className="text-link">View run →</span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="panel empty">
+              <h2>No runs yet</h2>
+              <p className="muted">
+                Run this chain to save its generated output here.
+              </p>
+              <Link
+                className="button primary"
+                href={`/chains/${id}?tab=generate`}
+              >
+                Generate content
+              </Link>
+            </div>
+          )}
+        </section>
+      )}
+      <details className="metadata">
+        <summary>Chain information</summary>
+        <p>
+          ID: <code>{id}</code>
+        </p>
+        <p>Created {when(chain.created_at)} ET</p>
+      </details>
+    </>
+  );
 }

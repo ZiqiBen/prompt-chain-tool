@@ -3,9 +3,15 @@ import { db } from "./supabase";
 
 export async function getAdmin() {
   const supabase = await db();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { supabase, user: null, allowed: false };
-  const { data: profile, error } = await supabase.from("profiles").select("is_superadmin").eq("id", user.id).maybeSingle();
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("is_superadmin")
+    .eq("id", user.id)
+    .maybeSingle();
   return { supabase, user, allowed: !error && profile?.is_superadmin === true };
 }
 
@@ -17,5 +23,7 @@ export async function requireAdmin() {
 }
 
 export function uuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }

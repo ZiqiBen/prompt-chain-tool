@@ -1,14 +1,151 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin,uuid } from "@/lib/auth";
+import { requireAdmin, uuid } from "@/lib/auth";
 import { when } from "@/lib/data";
 import { OutputTools } from "@/components/Controls";
-import type { Run,RunStep } from "@/lib/types";
-export default async function RunPage({params}:PageProps<"/runs/[id]">){
- const {supabase}=await requireAdmin();const {id}=await params;if(!uuid(id))notFound();
- const {data:run,error}=await supabase.from("prompt_chain_runs").select("*").eq("id",id).maybeSingle<Run>();
- if(error)throw new Error("This run could not be loaded.");if(!run)notFound();
- const steps=await supabase.from("prompt_chain_run_steps").select("*").eq("run_id",id).order("step_order").returns<RunStep[]>();
- if(steps.error)throw new Error("The step outputs could not be loaded.");
- return <><Link className="back-link" href={run.prompt_chain_id?`/chains/${run.prompt_chain_id}?tab=media`:"/media"}>← Generated media</Link><header className="page-header"><div><div className="row"><p className="eyebrow">SAVED RUN</p><span className={`badge ${run.status==="completed"?"green":run.status==="failed"?"red":""}`}>{run.status}</span></div><h1>{run.chain_name}</h1><p className="muted">{when(run.created_at)} ET · {run.preferred_language}{run.completed_at?` · ${Math.max(0,Math.round((Date.parse(run.completed_at)-Date.parse(run.created_at))/1000))}s`:""}</p></div>{run.prompt_chain_id&&<Link className="button" href={`/chains/${run.prompt_chain_id}?tab=generate`}>Run again</Link>}</header>{run.error_message&&<p role="alert" className="notice error">{run.error_message}</p>}{run.status==="running"&&<p className="notice">This run is still in progress. Refresh to check its latest saved outputs.</p>}<section className="panel stack"><div className="row between"><h2>Final output</h2>{run.output_text&&<OutputTools output={run.output_text} name={run.chain_name}/>}</div>{run.output_text?<pre className="output">{run.output_text}</pre>:<p className="muted">A final output is available after all steps complete.</p>}</section><section className="panel stack"><h2>Original input</h2><pre className="output">{run.input_text}</pre>{run.input_image_name&&<p className="hint">Input image: {run.input_image_name}. The image was passed to the first step and was not retained.</p>}</section><section><div className="section-heading"><div><h2>Step outputs</h2><p className="muted">Saved at execution time, even if the workflow is edited later.</p></div></div><div className="stack">{steps.data?.map(step=><details className="panel saved-step" key={step.id}><summary><span className="step-number">{step.step_order}</span><span>{step.step_name}</span><small className="muted">{(step.duration_ms/1000).toFixed(1)}s</small></summary><p className="hint">{step.model_key}{step.prompt_tokens!=null?` · ${step.prompt_tokens} input tokens`:""}{step.completion_tokens!=null?` · ${step.completion_tokens} output tokens`:""}</p><pre className="output">{step.output_text}</pre><details className="help"><summary>View the full prompt sent to the model</summary><pre className="output">{step.prompt_text}</pre></details></details>)}{!steps.data?.length&&<p className="muted">No steps completed in this run.</p>}</div></section><details className="metadata"><summary>Run information</summary><p>Run ID: <code>{run.id}</code></p><p>Chain ID: <code>{run.prompt_chain_id??"Deleted chain"}</code></p></details></>;
+import type { Run, RunStep } from "@/lib/types";
+export default async function RunPage({ params }: PageProps<"/runs/[id]">) {
+  const { supabase } = await requireAdmin();
+  const { id } = await params;
+  if (!uuid(id)) notFound();
+  const { data: run, error } = await supabase
+    .from("prompt_chain_runs")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle<Run>();
+  if (error) throw new Error("This run could not be loaded.");
+  if (!run) notFound();
+  const steps = await supabase
+    .from("prompt_chain_run_steps")
+    .select("*")
+    .eq("run_id", id)
+    .order("step_order")
+    .returns<RunStep[]>();
+  if (steps.error) throw new Error("The step outputs could not be loaded.");
+  return (
+    <>
+      <Link
+        className="back-link"
+        href={
+          run.prompt_chain_id
+            ? `/chains/${run.prompt_chain_id}?tab=media`
+            : "/media"
+        }
+      >
+        ← Generated media
+      </Link>
+      <header className="page-header">
+        <div>
+          <div className="row">
+            <p className="eyebrow">SAVED RUN</p>
+            <span
+              className={`badge ${run.status === "completed" ? "green" : run.status === "failed" ? "red" : ""}`}
+            >
+              {run.status}
+            </span>
+          </div>
+          <h1>{run.chain_name}</h1>
+          <p className="muted">
+            {when(run.created_at)} ET · {run.preferred_language}
+            {run.completed_at
+              ? ` · ${Math.max(0, Math.round((Date.parse(run.completed_at) - Date.parse(run.created_at)) / 1000))}s`
+              : ""}
+          </p>
+        </div>
+        {run.prompt_chain_id && (
+          <Link
+            className="button"
+            href={`/chains/${run.prompt_chain_id}?tab=generate`}
+          >
+            Run again
+          </Link>
+        )}
+      </header>
+      {run.error_message && (
+        <p role="alert" className="notice error">
+          {run.error_message}
+        </p>
+      )}
+      {run.status === "running" && (
+        <p className="notice">
+          This run is still in progress. Refresh to check its latest saved
+          outputs.
+        </p>
+      )}
+      <section className="panel stack">
+        <div className="row between">
+          <h2>Final output</h2>
+          {run.output_text && (
+            <OutputTools output={run.output_text} name={run.chain_name} />
+          )}
+        </div>
+        {run.output_text ? (
+          <pre className="output">{run.output_text}</pre>
+        ) : (
+          <p className="muted">
+            A final output is available after all steps complete.
+          </p>
+        )}
+      </section>
+      <section className="panel stack">
+        <h2>Original input</h2>
+        <pre className="output">{run.input_text}</pre>
+        {run.input_image_name && (
+          <p className="hint">
+            Input image: {run.input_image_name}. The image was passed to the
+            first step and was not retained.
+          </p>
+        )}
+      </section>
+      <section>
+        <div className="section-heading">
+          <div>
+            <h2>Step outputs</h2>
+            <p className="muted">
+              Saved at execution time, even if the workflow is edited later.
+            </p>
+          </div>
+        </div>
+        <div className="stack">
+          {steps.data?.map((step) => (
+            <details className="panel saved-step" key={step.id}>
+              <summary>
+                <span className="step-number">{step.step_order}</span>
+                <span>{step.step_name}</span>
+                <small className="muted">
+                  {(step.duration_ms / 1000).toFixed(1)}s
+                </small>
+              </summary>
+              <p className="hint">
+                {step.model_key}
+                {step.prompt_tokens != null
+                  ? ` · ${step.prompt_tokens} input tokens`
+                  : ""}
+                {step.completion_tokens != null
+                  ? ` · ${step.completion_tokens} output tokens`
+                  : ""}
+              </p>
+              <pre className="output">{step.output_text}</pre>
+              <details className="help">
+                <summary>View the full prompt sent to the model</summary>
+                <pre className="output">{step.prompt_text}</pre>
+              </details>
+            </details>
+          ))}
+          {!steps.data?.length && (
+            <p className="muted">No steps completed in this run.</p>
+          )}
+        </div>
+      </section>
+      <details className="metadata">
+        <summary>Run information</summary>
+        <p>
+          Run ID: <code>{run.id}</code>
+        </p>
+        <p>
+          Chain ID: <code>{run.prompt_chain_id ?? "Deleted chain"}</code>
+        </p>
+      </details>
+    </>
+  );
 }
