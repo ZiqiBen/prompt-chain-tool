@@ -33,7 +33,7 @@ export default async function Workspace({
           <ThemePicker />
           <div className="external-links">
             <a
-              href="https://week1-hello-world.vercel.app"
+              href="https://week1-hello-world-ruby.vercel.app"
               target="_blank"
               rel="noreferrer"
             >
