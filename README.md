@@ -27,7 +27,7 @@ Run `npm run dev -- --port 3003`. Sign in with an existing superadmin profile.
 
 Available variables: `{{input}}`, `{{user_question}}`, `{{previous_output}}`, `{{step_1}}` (or another earlier step), and `{{preferred_language}}`. Original input and previous output are also automatically supplied. Forward/unknown references fail with an explanatory message. A chain supports up to 20 steps; each prompt/input supports up to 12,000 characters.
 
-Generation uses the server's `GEMINI_MODEL` or `gemini-2.5-flash` by default. Steps can instead select an active Gemini entry from `llm_models`. Provider failures are reported and saved; no placeholder outputs are substituted. Images are sent transiently to Gemini and are not saved in the database.
+Generation uses the server's `GEMINI_MODEL` or `gemini-3.5-flash-lite` by default. Steps can instead select an active Gemini entry from `llm_models`. Provider failures are reported and saved; no placeholder outputs are substituted. Images are sent transiently to Gemini and are not saved in the database.
 
 ## Checks
 

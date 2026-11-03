@@ -5,7 +5,7 @@ const step = (name, prompt = name) => ({
   id: name,
   name,
   prompt_template: prompt,
-  model_key: "gemini-2.5-flash",
+  model_key: "gemini-3.5-flash-lite",
 });
 const response = (text) =>
   new Response(

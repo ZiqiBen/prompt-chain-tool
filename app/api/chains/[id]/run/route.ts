@@ -158,7 +158,7 @@ export async function POST(
     prompt_template: s.prompt_template,
     model_key: s.model_id
       ? models.get(s.model_id)!.model_key
-      : (process.env.GEMINI_MODEL ?? "gemini-2.5-flash"),
+      : (process.env.GEMINI_MODEL ?? "gemini-3.5-flash-lite"),
   }));
   const { data: run, error: runError } = await supabase
     .from("prompt_chain_runs")
